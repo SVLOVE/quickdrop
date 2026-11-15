@@ -1,12 +1,12 @@
 import 'dart:io';
 
 import 'package:flutter/material.dart';
-import 'package:localsend_app/config/theme.dart';
 import 'package:localsend_app/gen/strings.g.dart';
 import 'package:localsend_app/model/persistence/receive_history_entry.dart';
 import 'package:localsend_app/pages/receive_page.dart';
 import 'package:localsend_app/provider/receive_history_provider.dart';
 import 'package:localsend_app/provider/settings_provider.dart';
+import 'package:localsend_app/theme/beam_theme.dart';
 import 'package:localsend_app/util/native/directories.dart';
 import 'package:localsend_app/util/native/open_file.dart';
 import 'package:localsend_app/util/native/open_folder.dart';
@@ -62,6 +62,7 @@ class ReceiveHistoryPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final entries = context.watch(receiveHistoryProvider);
+    final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return Scaffold(
       appBar: AppBar(
@@ -77,8 +78,13 @@ class ReceiveHistoryPage extends StatelessWidget {
                 const SizedBox(width: 15),
                 ElevatedButton.icon(
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: Theme.of(context).colorScheme.secondaryContainerIfDark,
-                    foregroundColor: Theme.of(context).colorScheme.onSecondaryContainerIfDark,
+                    backgroundColor: isDark ? BeamColors.darkCard : BeamColors.lightCardHover,
+                    foregroundColor: isDark ? Colors.white : Colors.black,
+                    shape: const StadiumBorder(),
+                    elevation: 0,
+                    side: BorderSide(
+                      color: isDark ? BeamColors.darkBorder : BeamColors.lightBorder,
+                    ),
                   ),
                   onPressed: checkPlatform([TargetPlatform.iOS])
                       ? null
@@ -90,11 +96,16 @@ class ReceiveHistoryPage extends StatelessWidget {
                   icon: const Icon(Icons.folder),
                   label: Text(t.receiveHistoryPage.openFolder),
                 ),
-                const SizedBox(width: 20),
+                const SizedBox(width: 16),
                 ElevatedButton.icon(
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: Theme.of(context).colorScheme.secondaryContainerIfDark,
-                    foregroundColor: Theme.of(context).colorScheme.onSecondaryContainerIfDark,
+                    backgroundColor: isDark ? BeamColors.darkCard : BeamColors.lightCardHover,
+                    foregroundColor: isDark ? Colors.white : Colors.black,
+                    shape: const StadiumBorder(),
+                    elevation: 0,
+                    side: BorderSide(
+                      color: isDark ? BeamColors.darkBorder : BeamColors.lightBorder,
+                    ),
                   ),
                   onPressed: entries.isEmpty
                       ? null
@@ -123,12 +134,8 @@ class ReceiveHistoryPage extends StatelessWidget {
           else
             ...entries.map((entry) {
               return Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 15, vertical: 8),
-                child: InkWell(
-                  splashColor: Colors.transparent,
-                  splashFactory: NoSplash.splashFactory,
-                  highlightColor: Colors.transparent,
-                  hoverColor: Colors.transparent,
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+                child: BeamCard(
                   onTap: entry.path != null || entry.isMessage
                       ? () async {
                           if (entry.isMessage) {
@@ -165,32 +172,39 @@ class ReceiveHistoryPage extends StatelessWidget {
                           await _openFile(context, entry, context.redux(receiveHistoryProvider));
                         }
                       : null,
+                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
                   child: Row(
-                    crossAxisAlignment: CrossAxisAlignment.start,
+                    crossAxisAlignment: CrossAxisAlignment.center,
                     children: [
-                      FilePathThumbnail(
-                        path: entry.path,
-                        fileType: entry.fileType,
+                      ClipRRect(
+                        borderRadius: BorderRadius.circular(10),
+                        child: FilePathThumbnail(
+                          path: entry.path,
+                          fileType: entry.fileType,
+                        ),
                       ),
-                      const SizedBox(width: 10),
+                      const SizedBox(width: 12),
                       Expanded(
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            const SizedBox(height: 3),
                             Text(
                               entry.fileName,
-                              style: const TextStyle(fontSize: 16),
+                              style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w600),
                               maxLines: 1,
                               overflow: TextOverflow.fade,
                               softWrap: false,
                             ),
+                            const SizedBox(height: 3),
                             Text(
-                              '${entry.timestampString(context)} - ${entry.fileSize.asReadableFileSize} - ${entry.senderAlias}',
+                              '${entry.timestampString(context)} • ${entry.fileSize.asReadableFileSize} • ${entry.senderAlias}',
                               maxLines: 1,
                               overflow: TextOverflow.fade,
                               softWrap: false,
-                              style: const TextStyle(color: Colors.grey),
+                              style: TextStyle(
+                                fontSize: 12,
+                                color: isDark ? BeamColors.darkTextSecondary : Colors.black54,
+                              ),
                             ),
                           ],
                         ),

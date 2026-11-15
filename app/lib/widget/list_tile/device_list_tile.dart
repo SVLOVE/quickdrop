@@ -1,8 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:localsend_app/theme/beam_theme.dart';
 import 'package:localsend_app/util/device_type_ext.dart';
 import 'package:localsend_app/widget/custom_progress_bar.dart';
-import 'package:localsend_app/widget/device_bage.dart';
-import 'package:localsend_app/widget/list_tile/custom_list_tile.dart';
 import 'package:localsend_isolates/model/device.dart';
 
 class DeviceListTile extends StatelessWidget {
@@ -19,6 +18,7 @@ class DeviceListTile extends StatelessWidget {
   final VoidCallback? onDetailsTap;
 
   const DeviceListTile({
+    super.key,
     required this.device,
     this.isFavorite = false,
     this.nameOverride,
@@ -30,59 +30,91 @@ class DeviceListTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final badgeColor = Color.lerp(Theme.of(context).colorScheme.secondaryContainer, Colors.white, 0.3)!;
-    return CustomListTile(
-      icon: Icon(device.deviceType.icon, size: 46),
-      title: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Text(nameOverride ?? device.alias, style: const TextStyle(fontSize: 20)),
-          if (isFavorite) ...[
-            const SizedBox(width: 5),
-            Icon(Icons.check_circle, size: 16),
-          ],
-        ],
-      ),
-      trailing: onDetailsTap != null
-          ? IconButton(
-              icon: const Icon(Icons.info_outline),
-              onPressed: onDetailsTap,
-            )
-          : null,
-      subTitle: Wrap(
-        runSpacing: 10,
-        spacing: 10,
-        children: [
-          if (info != null)
-            Text(info!, style: const TextStyle(color: Colors.grey))
-          else if (progress != null)
-            Padding(
-              padding: const EdgeInsets.symmetric(vertical: 5),
-              child: CustomProgressBar(progress: progress!),
-            )
-          else ...[
-            if (device.ip != null)
-              DeviceBadge(
-                backgroundColor: badgeColor,
-                foregroundColor: Theme.of(context).colorScheme.onSecondaryContainer,
-                label: 'HTTP',
-              )
-            else
-              DeviceBadge(
-                backgroundColor: badgeColor,
-                foregroundColor: Theme.of(context).colorScheme.onSecondaryContainer,
-                label: 'WebRTC',
-              ),
-            if (device.deviceModel != null)
-              DeviceBadge(
-                backgroundColor: badgeColor,
-                foregroundColor: Theme.of(context).colorScheme.onSecondaryContainer,
-                label: device.deviceModel!,
-              ),
-          ],
-        ],
-      ),
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
+    return BeamCard(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
       onTap: onTap,
+      child: Row(
+        children: [
+          BeamSquircleIcon(
+            icon: device.deviceType.icon,
+            size: 46,
+            iconSize: 22,
+          ),
+          const SizedBox(width: 14),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Flexible(
+                      child: Text(
+                        nameOverride ?? device.alias,
+                        style: const TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                    if (isFavorite) ...[
+                      const SizedBox(width: 6),
+                      const Icon(Icons.star_rounded, size: 16, color: BeamColors.lime),
+                    ],
+                  ],
+                ),
+                const SizedBox(height: 2),
+                if (progress != null)
+                  Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 4),
+                    child: CustomProgressBar(progress: progress!),
+                  )
+                else
+                  Text(
+                    info ?? (device.deviceModel != null ? '${device.deviceModel} · ${device.ip ?? ''}' : (device.ip ?? 'Online')),
+                    style: const TextStyle(
+                      fontSize: 13,
+                      color: BeamColors.darkTextSecondary,
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+              ],
+            ),
+          ),
+          const SizedBox(width: 10),
+          GestureDetector(
+            onTap: onTap,
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 8),
+              decoration: BoxDecoration(
+                color: isDark ? const Color(0xFF22252C) : const Color(0xFFE5E7EB),
+                borderRadius: BorderRadius.circular(20),
+              ),
+              child: Text(
+                'Send',
+                style: TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.bold,
+                  color: isDark ? Colors.white : Colors.black,
+                ),
+              ),
+            ),
+          ),
+          if (onDetailsTap != null) ...[
+            const SizedBox(width: 4),
+            IconButton(
+              icon: const Icon(Icons.info_outline, size: 18, color: BeamColors.darkTextSecondary),
+              onPressed: onDetailsTap,
+            ),
+          ],
+        ],
+      ),
     );
   }
 }

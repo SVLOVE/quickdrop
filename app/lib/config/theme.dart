@@ -3,12 +3,13 @@ import 'package:flutter/services.dart';
 import 'package:localsend_app/gen/strings.g.dart';
 import 'package:localsend_app/model/persistence/color_mode.dart';
 import 'package:localsend_app/provider/device_info_provider.dart';
+import 'package:localsend_app/theme/beam_theme.dart';
 import 'package:localsend_app/util/native/platform_check.dart';
 import 'package:localsend_app/util/ui/dynamic_colors.dart';
 import 'package:refena_flutter/refena_flutter.dart';
 import 'package:yaru/yaru.dart' as yaru;
 
-final _borderRadius = BorderRadius.circular(5);
+final _borderRadius = BorderRadius.circular(16);
 
 ThemeData getTheme(ColorMode colorMode, Color customColor, Brightness brightness, DynamicColors? dynamicColors) {
   if (colorMode == ColorMode.yaru) {
@@ -51,9 +52,26 @@ ThemeData getTheme(ColorMode colorMode, Color customColor, Brightness brightness
 
   return ThemeData(
     colorScheme: colorScheme,
+    scaffoldBackgroundColor: colorScheme.surface,
+    cardColor: colorScheme.brightness == Brightness.dark ? BeamColors.darkCard : BeamColors.lightCard,
     useMaterial3: true,
     // same density on all platforms so desktop matches mobile (defaults to compact on desktop)
     visualDensity: VisualDensity.standard,
+    switchTheme: SwitchThemeData(
+      thumbColor: WidgetStateProperty.resolveWith((states) {
+        if (states.contains(WidgetState.selected)) {
+          return colorScheme.brightness == Brightness.dark ? Colors.black : Colors.white;
+        }
+        return Colors.white70;
+      }),
+      trackColor: WidgetStateProperty.resolveWith((states) {
+        if (states.contains(WidgetState.selected)) {
+          return BeamColors.lime;
+        }
+        return colorScheme.brightness == Brightness.dark ? const Color(0xFF2C3038) : const Color(0xFFD1D5DB);
+      }),
+      trackOutlineColor: WidgetStateProperty.all(Colors.transparent),
+    ),
     navigationBarTheme: colorScheme.brightness == Brightness.dark
         ? NavigationBarThemeData(
             iconTheme: WidgetStateProperty.all(const IconThemeData(color: Colors.white)),
@@ -118,7 +136,7 @@ Future<void> updateSystemOverlayStyleWithBrightness(Brightness brightness) async
 extension ThemeDataExt on ThemeData {
   /// This is the actual [cardColor] being used.
   Color get cardColorWithElevation {
-    return ElevationOverlay.applySurfaceTint(cardColor, colorScheme.surfaceTint, 1);
+    return brightness == Brightness.dark ? BeamColors.darkCard : BeamColors.lightCard;
   }
 }
 
@@ -141,10 +159,30 @@ extension InputDecorationThemeExt on InputDecorationThemeData {
 }
 
 ColorScheme _determineColorScheme(ColorMode mode, Color customColor, Brightness brightness, DynamicColors? dynamicColors) {
-  final defaultColorScheme = ColorScheme.fromSeed(
-    seedColor: Colors.teal,
-    brightness: brightness,
-  );
+  final isDark = brightness == Brightness.dark;
+  final defaultColorScheme = isDark
+      ? const ColorScheme.dark(
+          primary: BeamColors.lime,
+          onPrimary: BeamColors.onLime,
+          secondary: BeamColors.lime,
+          onSecondary: BeamColors.onLime,
+          surface: BeamColors.darkBackground,
+          onSurface: BeamColors.darkTextPrimary,
+          surfaceContainer: BeamColors.darkCard,
+          surfaceContainerHigh: BeamColors.darkIconBadge,
+          outline: BeamColors.darkBorder,
+        )
+      : const ColorScheme.light(
+          primary: Color(0xFF181A1F),
+          onPrimary: Colors.white,
+          secondary: BeamColors.lime,
+          onSecondary: BeamColors.onLime,
+          surface: BeamColors.lightBackground,
+          onSurface: BeamColors.lightTextPrimary,
+          surfaceContainer: BeamColors.lightCard,
+          surfaceContainerHigh: BeamColors.lightCardHover,
+          outline: BeamColors.lightBorder,
+        );
 
   final colorScheme = switch (mode) {
     ColorMode.system => brightness == Brightness.light ? dynamicColors?.light : dynamicColors?.dark,

@@ -14,20 +14,13 @@ import 'package:localsend_app/provider/network/scan_facade.dart';
 import 'package:localsend_app/provider/network/send_provider.dart';
 import 'package:localsend_app/provider/selection/selected_sending_files_provider.dart';
 import 'package:localsend_app/provider/settings_provider.dart';
+import 'package:localsend_app/theme/beam_theme.dart';
 import 'package:localsend_app/util/favorites.dart';
 import 'package:localsend_app/util/native/file_picker.dart';
-import 'package:localsend_app/util/native/platform_check.dart';
-import 'package:localsend_app/widget/big_button.dart';
 import 'package:localsend_app/widget/custom_icon_button.dart';
-import 'package:localsend_app/widget/dialogs/add_file_dialog.dart';
 import 'package:localsend_app/widget/dialogs/send_mode_help_dialog.dart';
-import 'package:localsend_app/widget/file_thumbnail.dart';
 import 'package:localsend_app/widget/list_tile/device_list_tile.dart';
-import 'package:localsend_app/widget/list_tile/device_placeholder_list_tile.dart';
-import 'package:localsend_app/widget/opacity_slideshow.dart';
-import 'package:localsend_app/widget/responsive_builder.dart';
 import 'package:localsend_app/widget/responsive_list_view.dart';
-import 'package:localsend_app/widget/responsive_wrap_view.dart';
 import 'package:localsend_app/widget/rotating_widget.dart';
 import 'package:localsend_isolates/model/device.dart';
 import 'package:localsend_isolates/model/session_status.dart';
@@ -35,7 +28,6 @@ import 'package:localsend_isolates/util/file_size_helper.dart';
 import 'package:refena_flutter/refena_flutter.dart';
 import 'package:routerino/routerino.dart';
 
-const _horizontalPadding = 15.0;
 final pickerOptions = FilePickerOption.getOptionsForPlatform();
 
 class SendTab extends StatelessWidget {
@@ -47,136 +39,119 @@ class SendTab extends StatelessWidget {
       provider: (ref) => sendTabVmProvider,
       init: (context) async => context.global.dispatchAsync(SendTabInitAction(context)), // ignore: discarded_futures
       builder: (context, vm) {
-        final sizingInformation = SizingInformation(MediaQuery.sizeOf(context).width);
-        final buttonWidth = sizingInformation.isDesktop ? BigButton.desktopWidth : BigButton.mobileWidth;
         final ref = context.ref;
         return ResponsiveListView(
-          padding: EdgeInsets.zero,
+          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
           children: [
+            const SizedBox(height: 12),
+            const Text(
+              'Send',
+              style: TextStyle(
+                fontSize: 34,
+                fontWeight: FontWeight.bold,
+                letterSpacing: -0.5,
+              ),
+            ),
             const SizedBox(height: 20),
-            if (vm.selectedFiles.isEmpty) ...[
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: _horizontalPadding),
-                child: Text(
-                  t.sendTab.selection.title,
-                  style: Theme.of(context).textTheme.titleMedium,
-                ),
-              ),
-              ResponsiveWrapView(
-                outerHorizontalPadding: 15,
-                outerVerticalPadding: 10,
-                childPadding: 10,
-                minChildWidth: buttonWidth,
-                children: pickerOptions.map((option) {
-                  return BigButton(
-                    icon: option.icon,
-                    label: option.label,
-                    filled: false,
-                    onTap: () async => ref.global.dispatchAsync(
-                      PickFileAction(
-                        option: option,
-                        context: context,
-                      ),
-                    ),
-                  );
-                }).toList(),
-              ),
-            ] else ...[
-              Card(
-                margin: const EdgeInsets.only(bottom: 10, left: _horizontalPadding, right: _horizontalPadding),
-                child: Padding(
-                  padding: const EdgeInsetsDirectional.only(start: 15, top: 5, bottom: 15),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Row(
-                        children: [
-                          Text(
-                            t.sendTab.selection.title,
-                            style: Theme.of(context).textTheme.titleMedium,
+
+            // 2x2 Grid Picker Options matching Beam design
+            LayoutBuilder(
+              builder: (context, constraints) {
+                final width = (constraints.maxWidth - 12) / 2;
+                return Wrap(
+                  spacing: 12,
+                  runSpacing: 12,
+                  children: pickerOptions.map((option) {
+                    return SizedBox(
+                      width: width,
+                      height: 64,
+                      child: BeamCard(
+                        padding: const EdgeInsets.symmetric(horizontal: 14),
+                        onTap: () async => ref.global.dispatchAsync(
+                          PickFileAction(
+                            option: option,
+                            context: context,
                           ),
-                          const Spacer(),
-                          CustomIconButton(
-                            onPressed: () => ref.redux(selectedSendingFilesProvider).dispatch(ClearSelectionAction()),
-                            child: Icon(Icons.close, color: Theme.of(context).colorScheme.secondary),
-                          ),
-                          const SizedBox(width: 5),
-                        ],
-                      ),
-                      const SizedBox(height: 5),
-                      Text(t.sendTab.selection.files(files: vm.selectedFiles.length)),
-                      Text(t.sendTab.selection.size(size: vm.selectedFiles.fold(0, (prev, curr) => prev + curr.size).asReadableFileSize)),
-                      const SizedBox(height: 10),
-                      SizedBox(
-                        height: defaultThumbnailSize,
-                        child: ListView.builder(
-                          scrollDirection: Axis.horizontal,
-                          itemCount: vm.selectedFiles.length,
-                          itemBuilder: (context, index) {
-                            final file = vm.selectedFiles[index];
-                            return Padding(
-                              padding: const EdgeInsets.only(right: 10),
-                              child: SmartFileThumbnail.fromCrossFile(file),
-                            );
-                          },
+                        ),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(option.icon, size: 22),
+                            const SizedBox(width: 10),
+                            Text(
+                              option.label,
+                              style: const TextStyle(
+                                fontSize: 16,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ],
                         ),
                       ),
-                      const SizedBox(height: 10),
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.end,
+                    );
+                  }).toList(),
+                );
+              },
+            ),
+            const SizedBox(height: 16),
+
+            // Selected Files Summary Card
+            if (vm.selectedFiles.isNotEmpty) ...[
+              BeamCard(
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          TextButton(
-                            style: TextButton.styleFrom(
-                              foregroundColor: Theme.of(context).colorScheme.onSurface,
-                            ),
-                            onPressed: () async {
-                              await context.push(() => const SelectedFilesPage());
-                            },
-                            child: Text(t.general.edit),
+                          Text(
+                            '${vm.selectedFiles.length} files selected',
+                            style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
                           ),
-                          const SizedBox(width: 15),
-                          ElevatedButton.icon(
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: Theme.of(context).colorScheme.primary,
-                              foregroundColor: Theme.of(context).colorScheme.onPrimary,
-                            ),
-                            onPressed: () async {
-                              if (pickerOptions.length == 1) {
-                                // open directly
-                                await ref.global.dispatchAsync(
-                                  PickFileAction(
-                                    option: pickerOptions.first,
-                                    context: context,
-                                  ),
-                                );
-                                return;
-                              }
-                              await AddFileDialog.open(
-                                context: context,
-                                options: pickerOptions,
-                              );
-                            },
-                            icon: const Icon(Icons.add),
-                            label: Text(t.general.add),
+                          const SizedBox(height: 3),
+                          Text(
+                            '${vm.selectedFiles.fold(0, (prev, curr) => prev + curr.size).asReadableFileSize} · ${vm.selectedFiles.map((f) => f.name).take(2).join(', ')}...',
+                            style: const TextStyle(fontSize: 13, color: BeamColors.darkTextSecondary),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
                           ),
-                          const SizedBox(width: 15),
                         ],
                       ),
-                    ],
-                  ),
+                    ),
+                    TextButton(
+                      onPressed: () async => await context.push(() => const SelectedFilesPage()),
+                      child: const Text(
+                        'Edit',
+                        style: TextStyle(
+                          color: BeamColors.lime,
+                          fontWeight: FontWeight.bold,
+                          fontSize: 15,
+                        ),
+                      ),
+                    ),
+                    IconButton(
+                      icon: const Icon(Icons.close_rounded, size: 20, color: BeamColors.darkTextSecondary),
+                      onPressed: () => ref.redux(selectedSendingFilesProvider).dispatch(ClearSelectionAction()),
+                    ),
+                  ],
                 ),
               ),
+              const SizedBox(height: 16),
             ],
+
+            // Nearby Devices Header
             Row(
               children: [
-                const SizedBox(width: _horizontalPadding),
-                Flexible(
-                  child: Padding(
-                    padding: const EdgeInsets.symmetric(vertical: 10),
-                    child: Text(t.sendTab.nearbyDevices, style: Theme.of(context).textTheme.titleMedium),
+                const Text(
+                  'Nearby devices',
+                  style: TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.bold,
+                    color: BeamColors.darkTextSecondary,
                   ),
                 ),
-                const SizedBox(width: 10),
+                const Spacer(),
                 _ScanButton(
                   ips: vm.localIps,
                 ),
@@ -184,14 +159,14 @@ class SendTab extends StatelessWidget {
                   message: t.sendTab.manualSending,
                   child: CustomIconButton(
                     onPressed: () async => vm.onTapAddress(context),
-                    child: const Icon(Icons.ads_click),
+                    child: const Icon(Icons.ads_click, size: 20),
                   ),
                 ),
                 Tooltip(
                   message: t.dialogs.favoriteDialog.title,
                   child: CustomIconButton(
                     onPressed: () async => await vm.onTapFavorite(context),
-                    child: const Icon(Icons.favorite),
+                    child: const Icon(Icons.favorite, size: 20),
                   ),
                 ),
                 _SendModeButton(
@@ -199,18 +174,43 @@ class SendTab extends StatelessWidget {
                 ),
               ],
             ),
+            const SizedBox(height: 10),
+
             if (vm.nearbyDevices.isEmpty)
-              const Padding(
-                padding: EdgeInsets.only(bottom: 10, left: _horizontalPadding, right: _horizontalPadding),
-                child: Opacity(
-                  opacity: 0.3,
-                  child: DevicePlaceholderListTile(),
+              BeamCard(
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 20),
+                child: Row(
+                  children: [
+                    const BeamSquircleIcon(
+                      icon: Icons.radar_rounded,
+                      size: 46,
+                      iconSize: 24,
+                    ),
+                    const SizedBox(width: 14),
+                    const Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'No devices found',
+                            style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold),
+                          ),
+                          SizedBox(height: 2),
+                          Text(
+                            'Ensure devices are on the same Wi-Fi and have Beam open.',
+                            style: TextStyle(fontSize: 13, color: BeamColors.darkTextSecondary),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
                 ),
               ),
+
             ...vm.nearbyDevices.map((device) {
               final favoriteEntry = vm.favoriteDevices.findDevice(device);
               return Padding(
-                padding: const EdgeInsets.only(bottom: 10, left: _horizontalPadding, right: _horizontalPadding),
+                padding: const EdgeInsets.only(bottom: 10),
                 child: Hero(
                   tag: 'device-${device.ip}',
                   child: vm.sendMode == SendMode.multiple
@@ -230,42 +230,29 @@ class SendTab extends StatelessWidget {
                 ),
               );
             }),
-            const SizedBox(height: 10),
+
+            const SizedBox(height: 16),
+            Center(
+              child: TextButton(
+                onPressed: () async => vm.onTapAddress(context),
+                child: const Text(
+                  "Can't see a device? Add by IP address",
+                  style: TextStyle(
+                    fontSize: 14,
+                    color: BeamColors.darkTextSecondary,
+                  ),
+                ),
+              ),
+            ),
             Center(
               child: TextButton(
                 onPressed: () async {
                   await context.push(() => const TroubleshootPage());
                 },
-                child: Text(t.troubleshootPage.title),
+                child: Text(t.troubleshootPage.title, style: const TextStyle(fontSize: 12)),
               ),
             ),
-            const SizedBox(height: 20),
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: _horizontalPadding),
-              child: Consumer(
-                builder: (context, ref) {
-                  final animations = ref.watch(animationProvider);
-                  return OpacitySlideshow(
-                    durationMillis: 6000,
-                    running: animations,
-                    children: [
-                      Text(
-                        t.sendTab.help,
-                        style: const TextStyle(color: Colors.grey),
-                        textAlign: TextAlign.center,
-                      ),
-                      if (checkPlatformCanReceiveShareIntent())
-                        Text(
-                          t.sendTab.shareIntentInfo,
-                          style: const TextStyle(color: Colors.grey),
-                          textAlign: TextAlign.center,
-                        ),
-                    ],
-                  );
-                },
-              ),
-            ),
-            const SizedBox(height: 50),
+            const SizedBox(height: 80),
           ],
         );
       },

@@ -17,6 +17,11 @@
 # FVM Version Cache
 .fvm/
 
+# Local design mockups
+Beam — LocalSend Redesign-png/
+.agent/
+.vscode/
+
 # macOS
 .DS_Store
 
